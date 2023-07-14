@@ -4,10 +4,12 @@
 
 This script does one two things:
 
-1. 
+### Create a temporary pdf file from a `man` *page*
   - If Documentation exists on [OpenBSD manpages](https://man.openbsd.org) it will convert that `html` to a temporary pdf using `pandoc`
   - Else it will create a temporary pdf file using `man -t` and then processing that output with `ps2pdf`
-2. It will open the temporary pdf in a pdf viewer. Currently it's hardcoded to open with with evince.
+
+### Open the pdf immediately for viewing
+It will open the temporary pdf in a pdf viewer. Currently it's hardcoded to open with with evince.
 
 ## How to use it
 
