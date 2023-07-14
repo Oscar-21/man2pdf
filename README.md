@@ -2,8 +2,6 @@
 
 ## What the script does
 
-This script does one two things:
-
 ### Create a temporary pdf file from a `man` *page*
   - If Documentation exists on [OpenBSD manpages](https://man.openbsd.org) it will convert that `html` to a temporary pdf using `pandoc`
   - Else it will create a temporary pdf file using `man -t` and then processing that output with `ps2pdf`
