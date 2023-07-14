@@ -1,6 +1,11 @@
 # man2pdf
 
-## What the script does
+## Overview
+
+This is a script built for bash shells that will create pdfs from `manpages` and automatically open a pdf viewer.
+Even though it was built and runs primarlily on **Linux** it defaults to `OpenBSD` documetation if it is available.
+
+## How it Works:
 
 ### Create a temporary pdf file from a `man` *page*
   - If Documentation exists on [OpenBSD manpages](https://man.openbsd.org) it will convert that `html` to a temporary pdf using `pandoc`
