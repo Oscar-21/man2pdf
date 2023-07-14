@@ -1,5 +1,11 @@
 # man2pdf
 
+### Usage
+
+```bash
+$ man2pdf <program-name>
+```
+
 ## Overview
 
 This is a script built for bash shells that will create pdfs from `manpages` and automatically open a pdf viewer.
@@ -23,9 +29,3 @@ You will need to make sure you have the following packages:
 - `mktemp`
 - `ps2pdf`
 - `evince`
-
-### Usage
-
-```bash
-$ man2pdf <program-name>
-```
