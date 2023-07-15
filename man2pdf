@@ -1,27 +1,57 @@
 #!/bin/bash
 
-if [ $# -ne 1 ]; then
+if [ $# -eq 0 ]; then
   echo
   echo "Usage man2pdf <package-name>"
   echo
   exit 1
 fi
 
+if [ $# -eq 2 ]; then
+  if [[ $1 -ne "-s" && $1 -ne "--system-installed" ]]; then
+    echo "invalid option"
+    echo "Usage man2pdf <package-name>" && exit 1
+  fi
+fi
+
+# Check if the first argument is -s or --system-installed
+if [[ $1 == "-s" || $1 == "--system-installed" ]]; then
+    # Shift the arguments to the left, so that $2 becomes $1
+    shift
+    # Set the system_installed variable to true
+    SYSTEM_INSTALLED=true
+else
+    # Set the system_installed variable to false
+    SYSTEM_INSTALLED=false
+fi
+
 PACKAGE_NAME="$1"
 PDF="$(mktemp).pdf" || exit 1
-
 URL="https://man.openbsd.org/$PACKAGE_NAME"
-
-# Execute the curl command and store the HTTP response code in a variable
 HTTP_CODE=$(curl -s -o /dev/null -w "%{HTTP_CODE}" "$URL")
 
-# Check if the HTTP response code indicates an error
-if [[ $HTTP_CODE -ge 400 ]]; then
-  # An error occurred
-  man -t "$PACKAGE_NAME" | ps2pdf - "$PDF"
-  evince --fullscreen "$PDF"
+if [[ $SYSTEM_INSTALLED == true ]]; then
+  if man -w "$PACKAGE_NAME" > /dev/null 2>&1; then
+    man -t "$PACKAGE_NAME" | ps2pdf - "$PDF"
+  	evince --named-dest=NAME --fullscreen "$PDF"
+  else
+	  # Check if the HTTP response code indicates an error
+	  if [[ $HTTP_CODE -ge 400 ]]; then
+		  # An error occurred
+	    echo "manpage not available" && exit 1
+	  else
+      pandoc --pdf-engine=xelatex --variable mainfont="Roboto" "$URL" -o "$PDF"
+  	  evince --named-dest=NAME --fullscreen "$PDF"
+    fi
+  fi
+elif [[ $HTTP_CODE -ge 400 ]]; then
+	if man -w "$PACKAGE_NAME" > /dev/null 2>&1; then
+		man -t "$PACKAGE_NAME" | ps2pdf - "$PDF"
+		evince --fullscreen "$PDF"
+	else
+		echo "manpage not available" && exit 1
+	fi
 else
-  #flatpak run --user org.mozilla.firefox -P "PdfViewer" "$URL"
-  pandoc --pdf-engine=xelatex --variable mainfont="Roboto" "$URL" -o "$PDF"
-  evince --named-dest=NAME --fullscreen "$PDF"
+	pandoc --pdf-engine=xelatex --variable mainfont="Roboto" "$URL" -o "$PDF"
+	evince --named-dest=NAME --fullscreen "$PDF"
 fi
