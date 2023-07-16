@@ -40,6 +40,7 @@ if [[ $SYSTEM_INSTALLED == true ]]; then
   	evince --named-dest=NAME --fullscreen "$PDF"
   	exit 1
   fi
+fi
 
 echo "man page does not exist"
 echo "attempting to open documentation from $URL"
