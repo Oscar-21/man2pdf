@@ -2,16 +2,19 @@
 
 if [ $# -eq 0 ]; then
   echo
-  echo "Usage man2pdf <package-name>"
+  echo "Usage man2pdf [-s|--system-installed] <package-name>"
   echo
   exit 1
 fi
 
+# Check for valid user syntax
 if [ $# -eq 2 ]; then
   if [[ $1 -ne "-s" && $1 -ne "--system-installed" ]]; then
     echo "invalid option"
-    echo "Usage man2pdf <package-name>" && exit 1
+    echo "Usage man2pdf [-s|--system-installed] <package-name>"
+    exit 1;
   fi
+
 fi
 
 # Check if the first argument is -s or --system-installed
@@ -25,6 +28,7 @@ else
     SYSTEM_INSTALLED=false
 fi
 
+# page that user wishes to see
 PACKAGE_NAME="$1"
 PDF="$(mktemp).pdf" || exit 1
 URL="https://man.openbsd.org/$PACKAGE_NAME"
@@ -34,15 +38,20 @@ if [[ $SYSTEM_INSTALLED == true ]]; then
   if man -w "$PACKAGE_NAME" > /dev/null 2>&1; then
     man -t "$PACKAGE_NAME" | ps2pdf - "$PDF"
   	evince --named-dest=NAME --fullscreen "$PDF"
-    exit 0
+  	exit 1
   fi
+
+echo "man page does not exist"
+echo "attempting to open documentation from $URL"
+
+if [[ $HTTP_CODE -ge 400 ]]; then
+	if man -w "$PACKAGE_NAME" > /dev/null 2>&1; then
+		man -t "$PACKAGE_NAME" | ps2pdf - "$PDF"
+		evince --fullscreen "$PDF"
+        exit 1
+	fi
+	echo "manpage not available locally, opening openbsd docs"
 fi
 
-# Check if the HTTP response code indicates an error
-if [[ $HTTP_CODE -ge 400 ]]; then
-  # An error occurred
-  echo "manpage not available" && exit 1
-else
-  pandoc --pdf-engine=xelatex --variable mainfont="Roboto" "$URL" -o "$PDF"
-  evince --named-dest=NAME --fullscreen "$PDF"
-fi
+pandoc --pdf-engine=xelatex --variable mainfont="Roboto" "$URL" -o "$PDF"
+evince --named-dest=NAME --fullscreen "$PDF"
