@@ -34,24 +34,15 @@ if [[ $SYSTEM_INSTALLED == true ]]; then
   if man -w "$PACKAGE_NAME" > /dev/null 2>&1; then
     man -t "$PACKAGE_NAME" | ps2pdf - "$PDF"
   	evince --named-dest=NAME --fullscreen "$PDF"
-  else
-	  # Check if the HTTP response code indicates an error
-	  if [[ $HTTP_CODE -ge 400 ]]; then
-		  # An error occurred
-	    echo "manpage not available" && exit 1
-	  else
-      pandoc --pdf-engine=xelatex --variable mainfont="Roboto" "$URL" -o "$PDF"
-  	  evince --named-dest=NAME --fullscreen "$PDF"
-    fi
+    exit 0
   fi
-elif [[ $HTTP_CODE -ge 400 ]]; then
-	if man -w "$PACKAGE_NAME" > /dev/null 2>&1; then
-		man -t "$PACKAGE_NAME" | ps2pdf - "$PDF"
-		evince --fullscreen "$PDF"
-	else
-		echo "manpage not available" && exit 1
-	fi
+fi
+
+# Check if the HTTP response code indicates an error
+if [[ $HTTP_CODE -ge 400 ]]; then
+  # An error occurred
+  echo "manpage not available" && exit 1
 else
-	pandoc --pdf-engine=xelatex --variable mainfont="Roboto" "$URL" -o "$PDF"
-	evince --named-dest=NAME --fullscreen "$PDF"
+  pandoc --pdf-engine=xelatex --variable mainfont="Roboto" "$URL" -o "$PDF"
+  evince --named-dest=NAME --fullscreen "$PDF"
 fi
