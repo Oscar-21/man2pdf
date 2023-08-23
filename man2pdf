@@ -1,58 +1,77 @@
 #!/bin/bash
 
-if [ $# -eq 0 ]; then
+echo "$# wtf"
+if [ $# != 2 ]; then
   echo
-  echo "Usage man2pdf [-s|--system-installed] <package-name>"
+  echo "Usage man2pdf <man|info|openbsd> <package-name>"
   echo
   exit 1
 fi
 
 # Check for valid user syntax
-if [ $# -eq 2 ]; then
-  if [[ $1 -ne "-s" && $1 -ne "--system-installed" ]]; then
-    echo "invalid option"
-    echo "Usage man2pdf [-s|--system-installed] <package-name>"
-    exit 1;
-  fi
-
+if [[ $1 -ne "man" && $1 -ne "info" && $1 -ne "openbsd" ]]; then
+  echo "invalid option"
+  echo "Usage man2pdf <man|info|openbsd> <package-name>"
+  exit 1;
 fi
 
+USE_INFO=false
+USE_MAN=false
+USE_OPENBSD=false
+
 # Check if the first argument is -s or --system-installed
-if [[ $1 == "-s" || $1 == "--system-installed" ]]; then
+if [[ $1 == "info" ]]; then
     # Shift the arguments to the left, so that $2 becomes $1
     shift
-    # Set the system_installed variable to true
-    SYSTEM_INSTALLED=true
+    USE_INFO=true
+elif [[ $1 == "man" ]]; then
+    shift
+    USE_MAN=true
 else
-    # Set the system_installed variable to false
-    SYSTEM_INSTALLED=false
+    shift
+    USE_OPENBSD=true
 fi
 
 # page that user wishes to see
 PACKAGE_NAME="$1"
+TXT="$(mktemp).txt" || exit 1
+UNFORMATTED_TXT="$(mktemp).txt" || exit 1
 PDF="$(mktemp).pdf" || exit 1
-URL="https://man.openbsd.org/$PACKAGE_NAME"
-HTTP_CODE=$(curl -s -o /dev/null -w "%{HTTP_CODE}" "$URL")
 
-if [[ $SYSTEM_INSTALLED == true ]]; then
+if [ "$USE_INFO" == "true" ]; then
+    #echo "$TXT"
+    #echo "$PDF"
+    info --subnodes "$PACKAGE_NAME" --output="$TXT"
+	iconv -f "$(file -i "$TXT" | cut -d= -f2)" -t UTF-8 "$TXT" > "$UNFORMATTED_TXT" && mv "$UNFORMATTED_TXT" "$TXT"
+    pandoc --from markdown --to pdf --output "$PDF" "$TXT"
+  	evince "$PDF"
+    exit 1
+fi
+
+if [[ $USE_MAN == true ]]; then
   if man -w "$PACKAGE_NAME" > /dev/null 2>&1; then
     man -t "$PACKAGE_NAME" | ps2pdf - "$PDF"
-  	evince --named-dest=NAME --fullscreen "$PDF"
-  	exit 1
+    evince "$PDF"
+    exit 1
   fi
 fi
 
-echo "man page does not exist"
-echo "attempting to open documentation from $URL"
 
-if [[ $HTTP_CODE -ge 400 ]]; then
-	if man -w "$PACKAGE_NAME" > /dev/null 2>&1; then
-		man -t "$PACKAGE_NAME" | ps2pdf - "$PDF"
-		evince --fullscreen "$PDF"
-        exit 1
-	fi
-	echo "manpage not available locally, opening openbsd docs"
+
+if [[ "$USE_OPENBSD" == "true" ]]; then
+  URL="https://man.openbsd.org/$PACKAGE_NAME"
+  HTTP_CODE=$(curl -s -o /dev/null -w "%{HTTP_CODE}" "$URL")
+  echo "attempting to open documentation from $URL"
+
+  if [[ $HTTP_CODE -ge 400 ]]; then
+	  if man -w "$PACKAGE_NAME" > /dev/null 2>&1; then
+		  man -t "$PACKAGE_NAME" | ps2pdf - "$PDF"
+		  evince --fullscreen "$PDF"
+      exit 1;
+	  fi
+	  echo "manpage not available locally, opening openbsd docs"
+  fi
+
+  pandoc --pdf-engine=xelatex --variable mainfont="Roboto" "$URL" -o "$PDF"
+  evince --named-dest=NAME --fullscreen "$PDF"
 fi
-
-pandoc --pdf-engine=xelatex --variable mainfont="Roboto" "$URL" -o "$PDF"
-evince --named-dest=NAME --fullscreen "$PDF"
